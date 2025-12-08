@@ -4,7 +4,7 @@ import React
 
 @objc(RecorderManager)
 @objcMembers
-class RecorderManager: NSObject {
+public class RecorderManager: NSObject {
   private static let fileDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "yyyyMMdd_HHmmss"
@@ -15,17 +15,17 @@ class RecorderManager: NSObject {
   private let audioSession = AVAudioSession.sharedInstance()
   private var audioRecorder: AVAudioRecorder?
 
-  static let shared = RecorderManager()
+  public static let shared = RecorderManager()
 
-  @objc static func sharedInstance() -> RecorderManager {
+  @objc public static func sharedInstance() -> RecorderManager {
     return RecorderManager.shared
   }
 
-  @objc static func requiresMainQueueSetup() -> Bool {
+  @objc public static func requiresMainQueueSetup() -> Bool {
     return true
   }
 
-  @objc func requestPermission(
+  @objc public func requestPermission(
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
@@ -36,7 +36,7 @@ class RecorderManager: NSObject {
     }
   }
 
-  @objc func startRecording(
+  @objc public func startRecording(
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
@@ -48,7 +48,7 @@ class RecorderManager: NSObject {
     }
   }
 
-  @objc func stopRecording(
+  @objc public func stopRecording(
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
@@ -66,14 +66,14 @@ class RecorderManager: NSObject {
     resolve(recorder.url.lastPathComponent)
   }
 
-  @objc func isRecording(
+  @objc public func isRecording(
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
     resolve(audioRecorder?.isRecording ?? false)
   }
 
-  @objc func handleShortcut(withAction action: String?) {
+  @objc public func handleShortcut(withAction action: String?) {
     guard let action else { return }
     switch action.lowercased() {
     case "start":

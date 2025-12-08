@@ -1,6 +1,7 @@
 #import "AppDelegate.h"
 
 #import <React/RCTBundleURLProvider.h>
+#import <React/RCTBridgeModule.h>
 #import "StealthRecorder-Swift.h"
 
 @implementation AppDelegate
