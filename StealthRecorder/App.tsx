@@ -7,6 +7,7 @@ import {
   Modal,
   NativeModules,
   Pressable,
+  ScrollView,
   SafeAreaView,
   StatusBar,
   StyleSheet,
@@ -24,6 +25,15 @@ type RecorderModule = {
   isRecording: () => Promise<boolean>;
 };
 
+type SettingSlide = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  actionLabel: string;
+  onAction?: () => void;
+};
+
 const recorderModule: RecorderModule | undefined =
   NativeModules.RecorderManager;
 
@@ -32,6 +42,7 @@ const App = (): React.JSX.Element => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
+  const [selectedSlide, setSelectedSlide] = useState<SettingSlide | null>(null);
 
   const syncRecordingState = useCallback(() => {
     if (!recorderModule) {
@@ -124,6 +135,18 @@ const App = (): React.JSX.Element => {
     }
   }, []);
 
+  const openRecorderTestGuide = useCallback(() => {
+    ensurePermission();
+    Alert.alert(
+      '録音テストの流れ',
+      [
+        '1. アプリ内のステータスカードで「録音中」と表示されるか確認。',
+        '2. 背面ダブルタップでショートカットを起動し録音開始。',
+        '3. 再度アプリに戻り「録音停止」ボタンで保存できるか確認。',
+      ].join('\n'),
+    );
+  }, [ensurePermission]);
+
   const stopRecording = useCallback(async () => {
     if (!recorderModule) {
       Alert.alert('iOS専用機能', '録音機能はiOSデバイスでのみ利用できます。');
@@ -148,6 +171,39 @@ const App = (): React.JSX.Element => {
     [],
   );
 
+  const settingSlides = useMemo<SettingSlide[]>(
+    () => [
+      {
+        id: 'accessibility',
+        title: '背面タップ設定',
+        subtitle: '設定 > アクセシビリティ > タッチ > 背面タップ',
+        description:
+          'iPhone設定アプリを開き、ダブルタップ動作にショートカットを割り当てます。感度が低い場合は同画面で調整してください。',
+        actionLabel: '設定アプリを開く',
+        onAction: openBackTapSettings,
+      },
+      {
+        id: 'shortcut',
+        title: 'ショートカット割り当て',
+        subtitle: 'ショートカットアプリで URL を開く',
+        description:
+          'ショートカットアプリで「URLを開く」アクションを追加し、stealthrecorder://start（録音開始）や stop（録音停止）を設定します。',
+        actionLabel: 'ショートカットを開く',
+        onAction: openShortcuts,
+      },
+      {
+        id: 'test',
+        title: '録音テスト',
+        subtitle: '無音録音のチェック',
+        description:
+          '背面タップで録音が開始されるか、アプリ内ボタンで停止と保存ができるか確認してください。録音後はファイルアプリから音声を確認できます。',
+        actionLabel: 'テスト手順を見る',
+        onAction: openRecorderTestGuide,
+      },
+    ],
+    [openBackTapSettings, openRecorderTestGuide, openShortcuts],
+  );
+
   return (
     <ImageBackground
       source={require('./assets/background.png')}
@@ -156,6 +212,37 @@ const App = (): React.JSX.Element => {
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.content}>
+          <Text style={styles.settingTitle}>設定</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            pagingEnabled
+            contentContainerStyle={styles.slideContainer}>
+            {settingSlides.map(slide => (
+              <Pressable
+                key={slide.id}
+                onPress={() => setSelectedSlide(slide)}
+                style={styles.slideCard}>
+                <ImageBackground
+                  source={require('./assets/background.png')}
+                  style={styles.slideImage}
+                  imageStyle={styles.slideImageInner}>
+                  <View style={styles.slideImageOverlay}>
+                    <Text style={styles.slideTitle}>{slide.title}</Text>
+                  </View>
+                </ImageBackground>
+                <View style={styles.slideBody}>
+                  <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
+                  <Pressable
+                    style={styles.slideButton}
+                    onPress={() => setSelectedSlide(slide)}>
+                    <Text style={styles.slideButtonText}>詳しく見る</Text>
+                  </Pressable>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+
           <Text style={styles.title}>ステルスレコーダー</Text>
           <Text style={styles.subtitle}>
             背面ダブルタップで無音録音を開始。証拠保全をよりスマートに。
@@ -222,6 +309,52 @@ const App = (): React.JSX.Element => {
         </View>
       </SafeAreaView>
 
+      <Modal
+        visible={!!selectedSlide}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setSelectedSlide(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.slideModalContent}>
+            <ImageBackground
+              source={require('./assets/background.png')}
+              style={styles.slideModalImage}
+              imageStyle={styles.slideModalImageInner}>
+              <View style={styles.slideModalOverlay}>
+                <Text style={styles.slideModalTitle}>
+                  {selectedSlide?.title}
+                </Text>
+                <Text style={styles.slideModalSubtitle}>
+                  {selectedSlide?.subtitle}
+                </Text>
+              </View>
+            </ImageBackground>
+            <Text style={styles.slideModalDescription}>
+              {selectedSlide?.description}
+            </Text>
+            <View style={styles.modalActions}>
+              {selectedSlide?.onAction ? (
+                <Pressable
+                  style={[styles.modalButton, styles.modalButtonPrimary]}
+                  onPress={() => {
+                    selectedSlide?.onAction?.();
+                    setSelectedSlide(null);
+                  }}>
+                  <Text style={styles.modalButtonPrimaryText}>
+                    {selectedSlide?.actionLabel}
+                  </Text>
+                </Pressable>
+              ) : null}
+              <Pressable
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => setSelectedSlide(null)}>
+                <Text style={styles.modalButtonSecondaryText}>閉じる</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showOnboarding} animationType="fade" transparent>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
@@ -271,6 +404,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 48,
+  },
+  settingTitle: {
+    color: '#cfd3dd',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  slideContainer: {
+    paddingBottom: 16,
+  },
+  slideCard: {
+    width: 260,
+    marginRight: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(8,12,20,0.85)',
+  },
+  slideImage: {
+    height: 130,
+    justifyContent: 'flex-end',
+  },
+  slideImageInner: {
+    opacity: 0.55,
+  },
+  slideImageOverlay: {
+    padding: 16,
+  },
+  slideTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  slideBody: {
+    padding: 16,
+    gap: 12,
+  },
+  slideSubtitle: {
+    color: '#9fb3d4',
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  slideButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#6fb1ff',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  slideButtonText: {
+    color: '#6fb1ff',
+    fontWeight: '600',
   },
   title: {
     color: '#ffffff',
@@ -373,6 +558,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#0f1424',
     borderRadius: 20,
     padding: 24,
+  },
+  slideModalContent: {
+    backgroundColor: '#0f1424',
+    borderRadius: 24,
+    overflow: 'hidden',
+    width: '100%',
+  },
+  slideModalImage: {
+    height: 180,
+  },
+  slideModalImageInner: {
+    opacity: 0.5,
+  },
+  slideModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  slideModalTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  slideModalSubtitle: {
+    color: '#cfd3dd',
+    marginTop: 6,
+  },
+  slideModalDescription: {
+    color: '#cfd3dd',
+    padding: 20,
+    fontSize: 15,
+    lineHeight: 22,
   },
   modalTitle: {
     color: '#fff',
