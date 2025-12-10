@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   Alert,
   AppState,
+  Clipboard,
   ImageBackground,
   Linking,
   Modal,
@@ -32,6 +33,7 @@ type SettingSlide = {
   description: string;
   actionLabel: string;
   onAction?: () => void;
+  copyableText?: string;
 };
 
 const recorderModule: RecorderModule | undefined =
@@ -42,7 +44,6 @@ const App = (): React.JSX.Element => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
   const [permissionChecked, setPermissionChecked] = useState(false);
-  const [selectedSlide, setSelectedSlide] = useState<SettingSlide | null>(null);
 
   const syncRecordingState = useCallback(() => {
     if (!recorderModule) {
@@ -174,64 +175,54 @@ const App = (): React.JSX.Element => {
   const settingSlides = useMemo<SettingSlide[]>(
     () => [
       {
-        id: 'shortcut',
-        title: '①ショートカットを作成',
-        subtitle: '※最初にこの手順を行ってください',
+        id: 'download',
+        title: '①アプリのダウンロード',
+        subtitle: 'ショートカットアプリを入手',
         description:
-          '【録音開始用ショートカットの作成】\n\n' +
-          '1. iPhoneのホーム画面から「ショートカット」アプリを開く\n' +
-          '   （青い四角が重なったアイコン）\n\n' +
-          '2. 画面右上の「＋」ボタンをタップ\n\n' +
-          '3.「アクションを追加」の青いボタンをタップ\n\n' +
-          '4. 上部の検索欄に「URL」と入力\n\n' +
-          '5. 検索結果から「URLを開く」をタップ\n\n' +
-          '6. 画面に表示された「URL」の薄い文字部分をタップし、\n' +
-          '   以下を正確に入力：\n' +
-          '   stealthrecorder://start\n\n' +
-          '7. 画面上部の「URLを開く」という文字をタップ\n\n' +
-          '8.「名称変更」を選び「録音開始」と入力\n\n' +
-          '9. 画面右上の「完了」をタップして保存\n\n' +
-          '✅ これで録音開始用のショートカットが完成です！',
-        actionLabel: 'ショートカットアプリを開く',
+          '1. App Storeを開く\n' +
+          '2.「ショートカット」と検索\n' +
+          '3. Apple公式アプリをダウンロード（無料）\n\n' +
+          '※既にインストール済みの場合は②へ',
+        actionLabel: 'App Storeを開く',
         onAction: openShortcuts,
       },
       {
-        id: 'accessibility',
-        title: '②背面タップを設定',
-        subtitle: '①で作成したショートカットを割り当てます',
+        id: 'shortcut',
+        title: '②ショートカットの作成',
+        subtitle: '録音開始用のショートカットを作る',
         description:
-          '【背面ダブルタップの設定】\n\n' +
-          '1. iPhoneの「設定」アプリを開く（歯車アイコン）\n\n' +
-          '2.「アクセシビリティ」をタップ\n\n' +
-          '3. 下にスクロールして「タッチ」をタップ\n\n' +
-          '4. 一番下までスクロールして「背面タップ」をタップ\n\n' +
-          '5.「ダブルタップ」をタップ\n\n' +
-          '6. 画面を下にスクロールして「ショートカット」の欄を探す\n\n' +
-          '7. ①で作成した「録音開始」をタップして選択\n' +
-          '   （チェックマークが付けばOK）\n\n' +
-          '8. 左上の「＜背面タップ」で戻る\n\n' +
-          '✅ これで背面ダブルタップで録音が開始できます！',
-        actionLabel: '設定アプリを開く',
+          '1. ショートカットアプリを開く\n' +
+          '2. 右上「＋」→「アクションを追加」\n' +
+          '3.「Web」を選択 →「URLを開く」を選択\n' +
+          '4. 下のURLをコピーして貼り付け\n' +
+          '5. 名前を「録音開始」にして完了',
+        actionLabel: 'ショートカットを開く',
+        onAction: openShortcuts,
+        copyableText: 'stealthrecorder://start',
+      },
+      {
+        id: 'accessibility',
+        title: '③背面タップを設定',
+        subtitle: '②で作成したショートカットを割り当て',
+        description:
+          '1. 設定 > アクセシビリティ > タッチ\n' +
+          '2.「背面タップ」→「ダブルタップ」\n' +
+          '3. 下にスクロールして「ショートカット」欄へ\n' +
+          '4.「録音開始」を選択（チェックが付けばOK）',
+        actionLabel: '設定を開く',
         onAction: openBackTapSettings,
       },
       {
         id: 'test',
-        title: '③動作テスト',
-        subtitle: '正しく録音できるか確認しましょう',
+        title: '④動作テスト',
+        subtitle: '正しく録音できるか確認',
         description:
-          '【録音テストの方法】\n\n' +
-          '1. このアプリを一度閉じる（ホーム画面に戻る）\n\n' +
-          '2. iPhoneの背面（リンゴマークの下あたり）を\n' +
-          '   指で2回タップする\n\n' +
-          '3. ステルスレコーダーアプリを開く\n\n' +
-          '4. 画面上部に「録音中」と表示されていれば成功！\n\n' +
-          '5.「録音停止」ボタンをタップして録音を保存\n\n' +
-          '【録音ファイルの確認方法】\n' +
-          '・「ファイル」アプリ > このiPhone内 >\n' +
-          '  StealthRecorder フォルダ内に保存されます\n\n' +
-          '⚠️ 注意：録音中は画面右上に赤い点が表示されます\n' +
-          '（これはiOSの仕様で非表示にできません）',
-        actionLabel: 'テスト手順を見る',
+          '1. このアプリを閉じてホーム画面へ\n' +
+          '2. iPhoneの背面を2回タップ\n' +
+          '3. アプリを開いて「録音中」と表示されれば成功\n' +
+          '4.「録音停止」ボタンで保存\n\n' +
+          '※録音中は画面右上に赤い点が表示されます',
+        actionLabel: 'テスト手順',
         onAction: openRecorderTestGuide,
       },
     ],
@@ -279,10 +270,7 @@ const App = (): React.JSX.Element => {
             <Text style={styles.settingTitle}>ステルスレコーダーの設定方法</Text>
             <View style={styles.settingList}>
               {settingSlides.map(slide => (
-                <Pressable
-                  key={slide.id}
-                  style={styles.settingItem}
-                  onPress={() => setSelectedSlide(slide)}>
+                <View key={slide.id} style={styles.settingItem}>
                   <View style={styles.settingItemHeader}>
                     <Text style={styles.settingItemTitle}>{slide.title}</Text>
                     <Text style={styles.settingItemSubtitle}>{slide.subtitle}</Text>
@@ -290,12 +278,20 @@ const App = (): React.JSX.Element => {
                   <Text style={styles.settingItemDescription}>
                     {slide.description}
                   </Text>
-                  <Pressable
-                    style={styles.settingItemButton}
-                    onPress={() => setSelectedSlide(slide)}>
-                    <Text style={styles.settingItemButtonText}>詳しく見る</Text>
-                  </Pressable>
-                </Pressable>
+                  {slide.copyableText && (
+                    <Pressable
+                      style={styles.copyButton}
+                      onPress={() => {
+                        Clipboard.setString(slide.copyableText || '');
+                        Alert.alert('コピーしました', slide.copyableText);
+                      }}>
+                      <Text style={styles.copyButtonText}>
+                        {slide.copyableText}
+                      </Text>
+                      <Text style={styles.copyButtonLabel}>タップでコピー</Text>
+                    </Pressable>
+                  )}
+                </View>
               ))}
             </View>
           </View>
@@ -339,52 +335,6 @@ const App = (): React.JSX.Element => {
           )}
         </ScrollView>
       </SafeAreaView>
-
-      <Modal
-        visible={!!selectedSlide}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setSelectedSlide(null)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.slideModalContent}>
-            <ImageBackground
-              source={require('./assets/background.png')}
-              style={styles.slideModalImage}
-              imageStyle={styles.slideModalImageInner}>
-              <View style={styles.slideModalOverlay}>
-                <Text style={styles.slideModalTitle}>
-                  {selectedSlide?.title}
-                </Text>
-                <Text style={styles.slideModalSubtitle}>
-                  {selectedSlide?.subtitle}
-                </Text>
-              </View>
-            </ImageBackground>
-            <Text style={styles.slideModalDescription}>
-              {selectedSlide?.description}
-            </Text>
-            <View style={styles.modalActions}>
-              {selectedSlide?.onAction ? (
-                <Pressable
-                  style={[styles.modalButton, styles.modalButtonPrimary]}
-                  onPress={() => {
-                    selectedSlide?.onAction?.();
-                    setSelectedSlide(null);
-                  }}>
-                  <Text style={styles.modalButtonPrimaryText}>
-                    {selectedSlide?.actionLabel}
-                  </Text>
-                </Pressable>
-              ) : null}
-              <Pressable
-                style={[styles.modalButton, styles.modalButtonSecondary]}
-                onPress={() => setSelectedSlide(null)}>
-                <Text style={styles.modalButtonSecondaryText}>閉じる</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
 
       <Modal visible={showOnboarding} animationType="fade" transparent>
         <View style={styles.modalBackdrop}>
@@ -489,6 +439,25 @@ const styles = StyleSheet.create({
   settingItemButtonText: {
     color: '#6fb1ff',
     fontWeight: '600',
+  },
+  copyButton: {
+    backgroundColor: 'rgba(111,177,255,0.15)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#6fb1ff',
+    padding: 12,
+    alignItems: 'center',
+  },
+  copyButtonText: {
+    color: '#6fb1ff',
+    fontSize: 15,
+    fontWeight: '700',
+    fontFamily: 'Menlo',
+  },
+  copyButtonLabel: {
+    color: '#9fb3d4',
+    fontSize: 11,
+    marginTop: 4,
   },
   title: {
     color: '#ffffff',
