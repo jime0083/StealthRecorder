@@ -174,29 +174,63 @@ const App = (): React.JSX.Element => {
   const settingSlides = useMemo<SettingSlide[]>(
     () => [
       {
-        id: 'accessibility',
-        title: '背面タップ設定',
-        subtitle: '設定 > アクセシビリティ > タッチ > 背面タップ',
+        id: 'shortcut',
+        title: '①ショートカットを作成',
+        subtitle: '※最初にこの手順を行ってください',
         description:
-          'iPhone設定アプリを開き、ダブルタップ動作にショートカットを割り当てます。感度が低い場合は同画面で調整してください。',
+          '【録音開始用ショートカットの作成】\n\n' +
+          '1. iPhoneのホーム画面から「ショートカット」アプリを開く\n' +
+          '   （青い四角が重なったアイコン）\n\n' +
+          '2. 画面右上の「＋」ボタンをタップ\n\n' +
+          '3.「アクションを追加」の青いボタンをタップ\n\n' +
+          '4. 上部の検索欄に「URL」と入力\n\n' +
+          '5. 検索結果から「URLを開く」をタップ\n\n' +
+          '6. 画面に表示された「URL」の薄い文字部分をタップし、\n' +
+          '   以下を正確に入力：\n' +
+          '   stealthrecorder://start\n\n' +
+          '7. 画面上部の「URLを開く」という文字をタップ\n\n' +
+          '8.「名称変更」を選び「録音開始」と入力\n\n' +
+          '9. 画面右上の「完了」をタップして保存\n\n' +
+          '✅ これで録音開始用のショートカットが完成です！',
+        actionLabel: 'ショートカットアプリを開く',
+        onAction: openShortcuts,
+      },
+      {
+        id: 'accessibility',
+        title: '②背面タップを設定',
+        subtitle: '①で作成したショートカットを割り当てます',
+        description:
+          '【背面ダブルタップの設定】\n\n' +
+          '1. iPhoneの「設定」アプリを開く（歯車アイコン）\n\n' +
+          '2.「アクセシビリティ」をタップ\n\n' +
+          '3. 下にスクロールして「タッチ」をタップ\n\n' +
+          '4. 一番下までスクロールして「背面タップ」をタップ\n\n' +
+          '5.「ダブルタップ」をタップ\n\n' +
+          '6. 画面を下にスクロールして「ショートカット」の欄を探す\n\n' +
+          '7. ①で作成した「録音開始」をタップして選択\n' +
+          '   （チェックマークが付けばOK）\n\n' +
+          '8. 左上の「＜背面タップ」で戻る\n\n' +
+          '✅ これで背面ダブルタップで録音が開始できます！',
         actionLabel: '設定アプリを開く',
         onAction: openBackTapSettings,
       },
       {
-        id: 'shortcut',
-        title: 'ショートカット割り当て',
-        subtitle: 'ショートカットアプリで URL を開く',
-        description:
-          'ショートカットアプリで「URLを開く」アクションを追加し、stealthrecorder://start（録音開始）や stop（録音停止）を設定します。',
-        actionLabel: 'ショートカットを開く',
-        onAction: openShortcuts,
-      },
-      {
         id: 'test',
-        title: '録音テスト',
-        subtitle: '無音録音のチェック',
+        title: '③動作テスト',
+        subtitle: '正しく録音できるか確認しましょう',
         description:
-          '背面タップで録音が開始されるか、アプリ内ボタンで停止と保存ができるか確認してください。録音後はファイルアプリから音声を確認できます。',
+          '【録音テストの方法】\n\n' +
+          '1. このアプリを一度閉じる（ホーム画面に戻る）\n\n' +
+          '2. iPhoneの背面（リンゴマークの下あたり）を\n' +
+          '   指で2回タップする\n\n' +
+          '3. ステルスレコーダーアプリを開く\n\n' +
+          '4. 画面上部に「録音中」と表示されていれば成功！\n\n' +
+          '5.「録音停止」ボタンをタップして録音を保存\n\n' +
+          '【録音ファイルの確認方法】\n' +
+          '・「ファイル」アプリ > このiPhone内 >\n' +
+          '  StealthRecorder フォルダ内に保存されます\n\n' +
+          '⚠️ 注意：録音中は画面右上に赤い点が表示されます\n' +
+          '（これはiOSの仕様で非表示にできません）',
         actionLabel: 'テスト手順を見る',
         onAction: openRecorderTestGuide,
       },
@@ -211,38 +245,10 @@ const App = (): React.JSX.Element => {
       imageStyle={styles.backgroundImage}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>
-          <Text style={styles.settingTitle}>設定</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            pagingEnabled
-            contentContainerStyle={styles.slideContainer}>
-            {settingSlides.map(slide => (
-              <Pressable
-                key={slide.id}
-                onPress={() => setSelectedSlide(slide)}
-                style={styles.slideCard}>
-                <ImageBackground
-                  source={require('./assets/background.png')}
-                  style={styles.slideImage}
-                  imageStyle={styles.slideImageInner}>
-                  <View style={styles.slideImageOverlay}>
-                    <Text style={styles.slideTitle}>{slide.title}</Text>
-                  </View>
-                </ImageBackground>
-                <View style={styles.slideBody}>
-                  <Text style={styles.slideSubtitle}>{slide.subtitle}</Text>
-                  <Pressable
-                    style={styles.slideButton}
-                    onPress={() => setSelectedSlide(slide)}>
-                    <Text style={styles.slideButtonText}>詳しく見る</Text>
-                  </Pressable>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>ステルスレコーダー</Text>
           <Text style={styles.subtitle}>
             背面ダブルタップで無音録音を開始。証拠保全をよりスマートに。
@@ -267,6 +273,31 @@ const App = (): React.JSX.Element => {
                 {isRecording ? '録音停止' : '録音は待機中'}
               </Text>
             </Pressable>
+          </View>
+
+          <View style={styles.settingSection}>
+            <Text style={styles.settingTitle}>ステルスレコーダーの設定方法</Text>
+            <View style={styles.settingList}>
+              {settingSlides.map(slide => (
+                <Pressable
+                  key={slide.id}
+                  style={styles.settingItem}
+                  onPress={() => setSelectedSlide(slide)}>
+                  <View style={styles.settingItemHeader}>
+                    <Text style={styles.settingItemTitle}>{slide.title}</Text>
+                    <Text style={styles.settingItemSubtitle}>{slide.subtitle}</Text>
+                  </View>
+                  <Text style={styles.settingItemDescription}>
+                    {slide.description}
+                  </Text>
+                  <Pressable
+                    style={styles.settingItemButton}
+                    onPress={() => setSelectedSlide(slide)}>
+                    <Text style={styles.settingItemButtonText}>詳しく見る</Text>
+                  </Pressable>
+                </Pressable>
+              ))}
+            </View>
           </View>
 
           <Pressable
@@ -306,7 +337,7 @@ const App = (): React.JSX.Element => {
               </View>
             </View>
           )}
-        </View>
+        </ScrollView>
       </SafeAreaView>
 
       <Modal
@@ -399,8 +430,10 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 32,
     paddingBottom: 48,
@@ -411,41 +444,41 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 12,
   },
-  slideContainer: {
-    paddingBottom: 16,
+  settingSection: {
+    marginTop: 12,
+    marginBottom: 12,
   },
-  slideCard: {
-    width: 260,
-    marginRight: 16,
-    borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(8,12,20,0.85)',
-  },
-  slideImage: {
-    height: 130,
-    justifyContent: 'flex-end',
-  },
-  slideImageInner: {
-    opacity: 0.55,
-  },
-  slideImageOverlay: {
-    padding: 16,
-  },
-  slideTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  slideBody: {
-    padding: 16,
+  settingList: {
     gap: 12,
   },
-  slideSubtitle: {
-    color: '#9fb3d4',
-    fontSize: 14,
-    lineHeight: 20,
+  settingItem: {
+    backgroundColor: 'rgba(8,12,20,0.85)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
   },
-  slideButton: {
+  settingItemHeader: {
+    marginBottom: 8,
+    gap: 4,
+  },
+  settingItemTitle: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  settingItemSubtitle: {
+    color: '#9fb3d4',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  settingItemDescription: {
+    color: '#cfd3dd',
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  settingItemButton: {
     alignSelf: 'flex-start',
     borderRadius: 999,
     borderWidth: 1,
@@ -453,7 +486,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 16,
   },
-  slideButtonText: {
+  settingItemButtonText: {
     color: '#6fb1ff',
     fontWeight: '600',
   },
