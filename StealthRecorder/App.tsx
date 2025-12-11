@@ -240,10 +240,6 @@ const App = (): React.JSX.Element => {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          <Text style={styles.title}>ステルスレコーダー</Text>
-          <Text style={styles.subtitle}>
-            背面ダブルタップで無音録音を開始。証拠保全をよりスマートに。
-          </Text>
           <View style={styles.statusCard}>
             <Text style={styles.statusLabel}>現在の状態</Text>
             <Text
