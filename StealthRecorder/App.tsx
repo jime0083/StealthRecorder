@@ -3,8 +3,11 @@ import {
   Alert,
   AppState,
   Clipboard,
+  Image,
   ImageBackground,
+  ImageSourcePropType,
   Linking,
+  LogBox,
   Modal,
   NativeModules,
   Pressable,
@@ -16,6 +19,13 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import LoadingAnimation from './components/LoadingAnimation';
+
+// 開発モードでの不要なログバナーを非表示
+LogBox.ignoreLogs([
+  'Failed to load recording files',
+  'Non-serializable values were found in the navigation state',
+]);
 
 const BACK_TAP_STORAGE_KEY = 'stealthrecorder:hasAcceptedBackTap';
 
@@ -42,12 +52,14 @@ type SettingSlide = {
   actionLabel: string;
   onAction?: () => void;
   copyableText?: string;
+  image?: ImageSourcePropType;
 };
 
 const recorderModule: RecorderModule | undefined =
   NativeModules.RecorderManager;
 
 const App = (): React.JSX.Element => {
+  const [isLoading, setIsLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [guideExpanded, setGuideExpanded] = useState(false);
@@ -61,9 +73,10 @@ const App = (): React.JSX.Element => {
     }
     try {
       const files = await recorderModule.getRecordingFiles();
-      setRecordingFiles(files);
-    } catch (error) {
-      console.error('Failed to load recording files:', error);
+      setRecordingFiles(files || []);
+    } catch {
+      // エラーは静かに処理（ファイルがない場合など）
+      setRecordingFiles([]);
     }
   }, []);
 
@@ -81,11 +94,21 @@ const App = (): React.JSX.Element => {
   }, []);
 
   useEffect(() => {
-    AsyncStorage.getItem(BACK_TAP_STORAGE_KEY).then(value => {
-      setShowOnboarding(value !== 'accepted');
-    });
-    syncRecordingState();
-    loadRecordingFiles();
+    const initialize = async () => {
+      try {
+        const value = await AsyncStorage.getItem(BACK_TAP_STORAGE_KEY);
+        setShowOnboarding(value !== 'accepted');
+        syncRecordingState();
+        await loadRecordingFiles();
+      } finally {
+        // 最低1.5秒はローディングを表示（アニメーションを見せるため）
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 1500);
+      }
+    };
+    initialize();
+
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') {
         syncRecordingState();
@@ -207,15 +230,16 @@ const App = (): React.JSX.Element => {
     () => [
       {
         id: 'download',
-        title: '①アプリのダウンロード',
-        subtitle: 'ショートカットアプリを入手',
+        title: '①ショートカットアプリの設定',
+        subtitle: 'ショートカットアプリの準備',
         description:
+          '※既にインストール済みの場合は②へ\n' +
           '1. App Storeを開く\n' +
-          '2.「ショートカット」と検索\n' +
-          '3. Apple公式アプリをダウンロード（無料）\n\n' +
-          '※既にインストール済みの場合は②へ',
+          '2.「ショートカット」と検索\n\n' +
+          '3. Apple公式アプリをダウンロード（無料）',
         actionLabel: 'App Storeを開く',
         onAction: openShortcuts,
+        image: require('./assets/instructions/how to1.png'),
       },
       {
         id: 'shortcut',
@@ -230,6 +254,7 @@ const App = (): React.JSX.Element => {
         actionLabel: 'ショートカットを開く',
         onAction: openShortcuts,
         copyableText: 'stealthrecorder://start',
+        image: require('./assets/instructions/how to2.png'),
       },
       {
         id: 'accessibility',
@@ -242,6 +267,7 @@ const App = (): React.JSX.Element => {
           '4.「録音開始」を選択（チェックが付けばOK）',
         actionLabel: '設定を開く',
         onAction: openBackTapSettings,
+        image: require('./assets/instructions/how to3.png'),
       },
       {
         id: 'test',
@@ -255,6 +281,7 @@ const App = (): React.JSX.Element => {
           '※録音中は画面右上に赤い点が表示されます',
         actionLabel: 'テスト手順',
         onAction: openRecorderTestGuide,
+        image: require('./assets/instructions/how to4.png'),
       },
       {
         id: 'files',
@@ -270,10 +297,21 @@ const App = (): React.JSX.Element => {
         onAction: () => {
           Linking.openURL('shareddocuments://');
         },
+        image: require('./assets/instructions/how to5.png'),
       },
     ],
     [openBackTapSettings, openRecorderTestGuide, openShortcuts],
   );
+
+  // ローディング画面
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="light-content" />
+        <LoadingAnimation color="#D1597B" dotSize={18} showText={true} />
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
@@ -306,23 +344,20 @@ const App = (): React.JSX.Element => {
                 {isRecording ? '録音停止' : '録音は待機中'}
               </Text>
             </Pressable>
-            <Pressable
-              style={styles.filesButton}
-              onPress={() => {
-                loadRecordingFiles();
-                setShowFilesModal(true);
-              }}>
-              <Text style={styles.filesButtonText}>
-                録音ファイル一覧 ({recordingFiles.length}件)
-              </Text>
-            </Pressable>
           </View>
 
           <View style={styles.settingSection}>
-            <Text style={styles.settingTitle}>ステルスレコーダーの設定方法</Text>
+            <Text style={styles.settingTitle}>ステルスレコーダーの使い方</Text>
             <View style={styles.settingList}>
               {settingSlides.map(slide => (
                 <View key={slide.id} style={styles.settingItem}>
+                  {slide.image && (
+                    <Image
+                      source={slide.image}
+                      style={styles.settingItemImage}
+                      resizeMode="contain"
+                    />
+                  )}
                   <View style={styles.settingItemHeader}>
                     <Text style={styles.settingItemTitle}>{slide.title}</Text>
                     <Text style={styles.settingItemSubtitle}>{slide.subtitle}</Text>
@@ -347,44 +382,6 @@ const App = (): React.JSX.Element => {
               ))}
             </View>
           </View>
-
-          <Pressable
-            style={styles.guideToggle}
-            onPress={() => setGuideExpanded(prev => !prev)}>
-            <Text style={styles.guideToggleText}>
-              {guideExpanded
-                ? 'Back Tap & ショートカット設定を閉じる'
-                : 'Back Tap & ショートカット設定ガイド'}
-            </Text>
-          </Pressable>
-
-          {guideExpanded && (
-            <View style={styles.guideCard}>
-              {instructions.map((text, index) => (
-                <Text key={text} style={styles.guideText}>
-                  {index + 1}. {text}
-                </Text>
-              ))}
-              <View style={styles.guideActions}>
-                <Pressable
-                  style={[
-                    styles.linkButton,
-                    styles.guideActionButton,
-                    styles.guideActionButtonSpacing,
-                  ]}
-                  onPress={openBackTapSettings}>
-                  <Text style={styles.linkButtonText}>設定アプリを開く</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.linkButton, styles.guideActionButton]}
-                  onPress={openShortcuts}>
-                  <Text style={styles.linkButtonText}>
-                    ショートカットを開く
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          )}
         </ScrollView>
       </SafeAreaView>
 
@@ -454,6 +451,12 @@ const App = (): React.JSX.Element => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#020406',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   background: {
     flex: 1,
     backgroundColor: '#020406',
@@ -493,6 +496,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.06)',
+  },
+  settingItemImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   settingItemHeader: {
     marginBottom: 8,
