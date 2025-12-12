@@ -12,8 +12,9 @@ public class RecorderManager: NSObject {
     return formatter
   }()
 
-  private let audioSession = AVAudioSession.sharedInstance()
-  private var audioRecorder: AVAudioRecorder?
+  // 全インスタンスで共有するためstatic変数に変更
+  private static let audioSession = AVAudioSession.sharedInstance()
+  private static var audioRecorder: AVAudioRecorder?
 
   public static let shared = RecorderManager()
 
@@ -29,7 +30,7 @@ public class RecorderManager: NSObject {
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    audioSession.requestRecordPermission { granted in
+    RecorderManager.audioSession.requestRecordPermission { granted in
       DispatchQueue.main.async {
         resolve(granted)
       }
@@ -41,7 +42,7 @@ public class RecorderManager: NSObject {
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
     do {
-      let fileName = try beginRecording()
+      let fileName = try RecorderManager.beginRecording()
       resolve(fileName)
     } catch {
       reject("recording_error", error.localizedDescription, error)
@@ -52,44 +53,101 @@ public class RecorderManager: NSObject {
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    guard let recorder = audioRecorder, recorder.isRecording else {
-      resolve("idle")
-      return
-    }
-    recorder.stop()
-    audioRecorder = nil
-    do {
-      try audioSession.setActive(false, options: [.notifyOthersOnDeactivation])
-    } catch {
-      // セッションの非アクティブ化に失敗した場合でも録音結果は残す
-    }
-    resolve(recorder.url.lastPathComponent)
+    let result = RecorderManager.stopRecordingInternal()
+    resolve(result)
   }
 
   @objc public func isRecording(
     _ resolve: @escaping RCTPromiseResolveBlock,
     rejecter reject: @escaping RCTPromiseRejectBlock
   ) {
-    resolve(audioRecorder?.isRecording ?? false)
+    resolve(RecorderManager.audioRecorder?.isRecording ?? false)
+  }
+
+  @objc public func getRecordingFiles(
+    _ resolve: @escaping RCTPromiseResolveBlock,
+    rejecter reject: @escaping RCTPromiseRejectBlock
+  ) {
+    let fileManager = FileManager.default
+    guard let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+      resolve([])
+      return
+    }
+    
+    NSLog("[StealthRecorder] Documents directory: %@", documentsURL.path)
+    
+    do {
+      let files = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: [.creationDateKey, .fileSizeKey], options: [])
+      let audioFiles = files
+        .filter { $0.pathExtension == "m4a" }
+        .compactMap { url -> [String: Any]? in
+          let attributes = try? fileManager.attributesOfItem(atPath: url.path)
+          let size = attributes?[.size] as? Int64 ?? 0
+          let date = attributes?[.creationDate] as? Date ?? Date()
+          return [
+            "name": url.lastPathComponent,
+            "path": url.path,
+            "size": size,
+            "date": ISO8601DateFormatter().string(from: date)
+          ]
+        }
+        .sorted { ($0["date"] as? String ?? "") > ($1["date"] as? String ?? "") }
+      
+      NSLog("[StealthRecorder] Found %d audio files", audioFiles.count)
+      resolve(audioFiles)
+    } catch {
+      NSLog("[StealthRecorder] Error listing files: %@", error.localizedDescription)
+      resolve([])
+    }
   }
 
   @objc public func handleShortcut(withAction action: String?) {
-    guard let action else { return }
+    guard let action else {
+      NSLog("[StealthRecorder] handleShortcut: action is nil")
+      return
+    }
+    NSLog("[StealthRecorder] handleShortcut: action = %@", action)
     switch action.lowercased() {
     case "start":
-      _ = try? beginRecording()
-    case "stop":
-      if let recorder = audioRecorder, recorder.isRecording {
-        recorder.stop()
-        audioRecorder = nil
-        try? audioSession.setActive(false, options: [.notifyOthersOnDeactivation])
+      // マイク権限を確認してから録音開始
+      RecorderManager.audioSession.requestRecordPermission { granted in
+        NSLog("[StealthRecorder] Permission granted: %@", granted ? "YES" : "NO")
+        if granted {
+          DispatchQueue.main.async {
+            do {
+              let fileName = try RecorderManager.beginRecording()
+              NSLog("[StealthRecorder] Recording started: %@", fileName)
+            } catch {
+              NSLog("[StealthRecorder] Recording failed: %@", error.localizedDescription)
+            }
+          }
+        }
       }
+    case "stop":
+      let result = RecorderManager.stopRecordingInternal()
+      NSLog("[StealthRecorder] Recording stopped: %@", result)
     default:
+      NSLog("[StealthRecorder] Unknown action: %@", action)
       break
     }
   }
 
-  private func beginRecording() throws -> String {
+  private static func stopRecordingInternal() -> String {
+    guard let recorder = audioRecorder, recorder.isRecording else {
+      return "idle"
+    }
+    recorder.stop()
+    let fileName = recorder.url.lastPathComponent
+    audioRecorder = nil
+    do {
+      try audioSession.setActive(false, options: [.notifyOthersOnDeactivation])
+    } catch {
+      // セッションの非アクティブ化に失敗した場合でも録音結果は残す
+    }
+    return fileName
+  }
+
+  private static func beginRecording() throws -> String {
     if let recorder = audioRecorder, recorder.isRecording {
       return recorder.url.lastPathComponent
     }
@@ -104,7 +162,7 @@ public class RecorderManager: NSObject {
     return url.lastPathComponent
   }
 
-  private func configureSession() throws {
+  private static func configureSession() throws {
     try audioSession.setCategory(
       .playAndRecord,
       mode: .default,
@@ -113,17 +171,17 @@ public class RecorderManager: NSObject {
     try audioSession.setActive(true, options: [])
   }
 
-  private func makeRecorderURL() throws -> URL {
+  private static func makeRecorderURL() throws -> URL {
     let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let directory = documents.first else {
       throw NSError(domain: "RecorderManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Documentsディレクトリを取得できません"])
     }
-    let timestamp = RecorderManager.fileDateFormatter.string(from: Date())
+    let timestamp = fileDateFormatter.string(from: Date())
     let filename = "stealth-\(timestamp).m4a"
     return directory.appendingPathComponent(filename)
   }
 
-  private func recordingSettings() -> [String: Any] {
+  private static func recordingSettings() -> [String: Any] {
     [
       AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
       AVSampleRateKey: 44100,

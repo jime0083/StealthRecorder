@@ -43,6 +43,7 @@
 		<string>shortcuts</string>
 		<string>App-Prefs</string>
 		<string>App-prefs</string>
+		<string>shareddocuments</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
@@ -69,5 +70,9 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 </dict>
 </plist>
