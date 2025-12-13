@@ -235,7 +235,7 @@ const App = (): React.JSX.Element => {
         description:
           '※既にインストール済みの場合は②へ\n' +
           '1. App Storeを開く\n' +
-          '2.「ショートカット」と検索\n\n' +
+          '2.「ショートカット」と検索\n' +
           '3. Apple公式アプリをダウンロード（無料）',
         actionLabel: 'App Storeを開く',
         onAction: openShortcuts,
