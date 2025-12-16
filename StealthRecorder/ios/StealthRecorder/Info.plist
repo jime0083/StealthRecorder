@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>StealthRecorder</string>
+	<string>2 Tap Recorder</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -33,7 +33,7 @@
 		<true/>
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>背面タップによる無音録音のためにマイクへのアクセスが必要です。</string>
+	<string>録音機能を使用するためにマイクへのアクセスが必要です。</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
@@ -49,10 +49,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>jp.stealthrecorder.app</string>
+			<string>jp.twotaprecorder.app</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>stealthrecorder</string>
+				<string>twotaprecorder</string>
 			</array>
 		</dict>
 	</array>

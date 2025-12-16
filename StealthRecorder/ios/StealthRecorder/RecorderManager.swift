@@ -74,7 +74,7 @@ public class RecorderManager: NSObject {
       return
     }
     
-    NSLog("[StealthRecorder] Documents directory: %@", documentsURL.path)
+    NSLog("[Recorder] Documents directory: %@", documentsURL.path)
     
     do {
       let files = try fileManager.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: [.creationDateKey, .fileSizeKey], options: [])
@@ -93,41 +93,41 @@ public class RecorderManager: NSObject {
         }
         .sorted { ($0["date"] as? String ?? "") > ($1["date"] as? String ?? "") }
       
-      NSLog("[StealthRecorder] Found %d audio files", audioFiles.count)
+      NSLog("[Recorder] Found %d audio files", audioFiles.count)
       resolve(audioFiles)
     } catch {
-      NSLog("[StealthRecorder] Error listing files: %@", error.localizedDescription)
+      NSLog("[Recorder] Error listing files: %@", error.localizedDescription)
       resolve([])
     }
   }
 
   @objc public func handleShortcut(withAction action: String?) {
     guard let action else {
-      NSLog("[StealthRecorder] handleShortcut: action is nil")
+      NSLog("[Recorder] handleShortcut: action is nil")
       return
     }
-    NSLog("[StealthRecorder] handleShortcut: action = %@", action)
+    NSLog("[Recorder] handleShortcut: action = %@", action)
     switch action.lowercased() {
     case "start":
       // マイク権限を確認してから録音開始
       RecorderManager.audioSession.requestRecordPermission { granted in
-        NSLog("[StealthRecorder] Permission granted: %@", granted ? "YES" : "NO")
+        NSLog("[Recorder] Permission granted: %@", granted ? "YES" : "NO")
         if granted {
           DispatchQueue.main.async {
             do {
               let fileName = try RecorderManager.beginRecording()
-              NSLog("[StealthRecorder] Recording started: %@", fileName)
+              NSLog("[Recorder] Recording started: %@", fileName)
             } catch {
-              NSLog("[StealthRecorder] Recording failed: %@", error.localizedDescription)
+              NSLog("[Recorder] Recording failed: %@", error.localizedDescription)
             }
           }
         }
       }
     case "stop":
       let result = RecorderManager.stopRecordingInternal()
-      NSLog("[StealthRecorder] Recording stopped: %@", result)
+      NSLog("[Recorder] Recording stopped: %@", result)
     default:
-      NSLog("[StealthRecorder] Unknown action: %@", action)
+      NSLog("[Recorder] Unknown action: %@", action)
       break
     }
   }
@@ -177,7 +177,7 @@ public class RecorderManager: NSObject {
       throw NSError(domain: "RecorderManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Documentsディレクトリを取得できません"])
     }
     let timestamp = fileDateFormatter.string(from: Date())
-    let filename = "stealth-\(timestamp).m4a"
+    let filename = "recording-\(timestamp).m4a"
     return directory.appendingPathComponent(filename)
   }
 

@@ -27,7 +27,7 @@ LogBox.ignoreLogs([
   'Non-serializable values were found in the navigation state',
 ]);
 
-const BACK_TAP_STORAGE_KEY = 'stealthrecorder:hasAcceptedBackTap';
+const BACK_TAP_STORAGE_KEY = 'twotaprecorder:hasAcceptedBackTap';
 
 type RecordingFile = {
   name: string;
@@ -137,18 +137,14 @@ const App = (): React.JSX.Element => {
     }
   }, [permissionChecked]);
 
-  const handleOnboardingChoice = useCallback(
-    async (accepted: boolean) => {
-      setShowOnboarding(false);
-      if (!accepted) {
-        return;
-      }
-      await AsyncStorage.setItem(BACK_TAP_STORAGE_KEY, 'accepted');
-      setGuideExpanded(true);
-      ensurePermission();
-    },
-    [ensurePermission],
-  );
+  const handleOnboardingContinue = useCallback(async () => {
+    // 審査要件: 権限要求の前に「閉じる/No」で抜けられる導線を置かない
+    // → このモーダルは「続ける」から必ず権限要求へ進む
+    setShowOnboarding(false);
+    await AsyncStorage.setItem(BACK_TAP_STORAGE_KEY, 'accepted');
+    setGuideExpanded(true);
+    await ensurePermission();
+  }, [ensurePermission]);
 
   const openShortcuts = useCallback(async () => {
     const shortcutsURL = 'shortcuts://';
@@ -219,8 +215,8 @@ const App = (): React.JSX.Element => {
     () => [
       '設定アプリ > アクセシビリティ > タッチ > 背面タップ を開きます。',
       '「ダブルタップ」に「ショートカット」を割り当てます。',
-      'ショートカットで「URLを開く」を追加し、URLに stealthrecorder://start を入力します。',
-      '停止用に stealthrecorder://stop を割り当てたショートカットを作ると便利です。',
+      'ショートカットで「URLを開く」を追加し、URLに twotaprecorder://start を入力します。',
+      '停止用に twotaprecorder://stop を割り当てたショートカットを作ると便利です。',
       '録音停止はこのアプリの「録音停止」ボタンで行います。',
     ],
     [],
@@ -253,7 +249,7 @@ const App = (): React.JSX.Element => {
           '5. 名前を「録音開始」にして完了',
         actionLabel: 'ショートカットを開く',
         onAction: openShortcuts,
-        copyableText: 'stealthrecorder://start',
+        copyableText: 'twotaprecorder://start',
         image: require('./assets/instructions/how to2.png'),
       },
       {
@@ -289,8 +285,8 @@ const App = (): React.JSX.Element => {
         subtitle: '保存した音声を再生する',
         description:
           '1.「ファイル」アプリを開く\n' +
-          '2.「このiPhone内」→「StealthRecorder」\n' +
-          '3. stealth-日時.m4a が録音ファイル\n' +
+          '2.「このiPhone内」→「2 Tap Recorder」\n' +
+          '3. recording-日時.m4a が録音ファイル\n' +
           '4. タップして再生できます\n\n' +
           '※ファイル名の日時は録音開始時刻です',
         actionLabel: 'ファイルを開く',
@@ -347,7 +343,7 @@ const App = (): React.JSX.Element => {
           </View>
 
           <View style={styles.settingSection}>
-            <Text style={styles.settingTitle}>ステルスレコーダーの使い方</Text>
+            <Text style={styles.settingTitle}>背面タップ録音アプリの使い方</Text>
             <View style={styles.settingList}>
               {settingSlides.map(slide => (
                 <View key={slide.id} style={styles.settingItem}>
@@ -385,29 +381,26 @@ const App = (): React.JSX.Element => {
         </ScrollView>
       </SafeAreaView>
 
-      <Modal visible={showOnboarding} animationType="fade" transparent>
+      <Modal
+        visible={showOnboarding}
+        animationType="fade"
+        transparent
+        onRequestClose={() => {
+          // Android back で閉じられるのを防ぐ（要件: 事前メッセージから離脱できない導線）
+        }}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              背面ダブルタップを有効にしますか？
+              マイク権限の確認
             </Text>
             <Text style={styles.modalDescription}>
-              ステルスレコーダーを使用するには、背面2回タップで録音を開始できるようショートカットを設定する必要があります。
+              録音機能を使用するため、次の画面でマイクへのアクセス許可をお願いします。
             </Text>
             <View style={styles.modalActions}>
               <Pressable
-                style={[
-                  styles.modalButton,
-                  styles.modalButtonSecondary,
-                  styles.modalButtonSpacing,
-                ]}
-                onPress={() => handleOnboardingChoice(false)}>
-                <Text style={styles.modalButtonSecondaryText}>No</Text>
-              </Pressable>
-              <Pressable
                 style={[styles.modalButton, styles.modalButtonPrimary]}
-                onPress={() => handleOnboardingChoice(true)}>
-                <Text style={styles.modalButtonPrimaryText}>Yes</Text>
+                onPress={handleOnboardingContinue}>
+                <Text style={styles.modalButtonPrimaryText}>続ける</Text>
               </Pressable>
             </View>
           </View>

@@ -8,7 +8,8 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-  self.moduleName = @"StealthRecorder";
+  // React Native root component name (AppRegistry.registerComponent)
+  self.moduleName = @"BackTapRecorder";
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};
@@ -34,7 +35,7 @@
             openURL:(NSURL *)url
             options:(NSDictionary<UIApplicationOpenURLOptionsKey,id> *)options
 {
-  if ([[url.scheme lowercaseString] isEqualToString:@"stealthrecorder"]) {
+  if ([[url.scheme lowercaseString] isEqualToString:@"twotaprecorder"]) {
     NSString *action = url.host ?: url.lastPathComponent;
     if (action.length == 0 && url.pathComponents.count > 1) {
       action = url.pathComponents[1];
