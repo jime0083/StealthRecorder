@@ -340,10 +340,33 @@ const App = (): React.JSX.Element => {
                 {isRecording ? '録音停止' : '録音は待機中'}
               </Text>
             </Pressable>
+
+            <View style={styles.safetySection}>
+              <Text style={styles.safetyTitle}>
+                痴漢冤罪の疑いをかけられた場合
+              </Text>
+              <View style={styles.safetyList}>
+                <Text style={styles.safetyItem}>
+                  ①駅員に市民を不当拘束する権利はない点を確認する
+                </Text>
+                <Text style={styles.safetyItem}>
+                  ②身分証明書と住所を提示した際、逮捕できない点を確認する
+                </Text>
+                <Text style={styles.safetyItem}>
+                  ③警察には警察手帳の提示と監視カメラの確認を求める
+                </Text>
+                <Text style={styles.safetyItem}>
+                  ④弁護士を呼ぶまで待機して欲しいと伝える
+                </Text>
+                <Text style={styles.safetyItem}>
+                  ⑤駅員や相手との会話を録音するなど証拠を残す
+                </Text>
+              </View>
+            </View>
           </View>
 
           <View style={styles.settingSection}>
-            <Text style={styles.settingTitle}>背面タップ録音アプリの使い方</Text>
+            <Text style={styles.settingTitle}>2タップレコーダーの使い方</Text>
             <View style={styles.settingList}>
               {settingSlides.map(slide => (
                 <View key={slide.id} style={styles.settingItem}>
@@ -588,6 +611,28 @@ const styles = StyleSheet.create({
   },
   statusValueActive: {
     color: '#f85c70',
+  },
+  safetySection: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  safetyTitle: {
+    color: '#D1597B',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 8,
+    fontFamily: 'HiraginoMincho-W6',
+  },
+  safetyList: {
+    gap: 6,
+  },
+  safetyItem: {
+    color: '#cfd3dd',
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: 'HiraginoMincho-W3',
   },
   stopButton: {
     backgroundColor: '#f85c70',
