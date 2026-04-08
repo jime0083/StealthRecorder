@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sips -g pixelWidth -g pixelHeight:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(pod install:*)"
+    ]
+  }
+}
