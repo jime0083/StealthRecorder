@@ -7,7 +7,7 @@ import React
 public class RecorderManager: NSObject {
   private static let fileDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
-    formatter.dateFormat = "yyyyMMdd_HHmmss"
+    formatter.dateFormat = "yyyy-M-d_HH-mm-ss"
     formatter.locale = Locale(identifier: "ja_JP")
     return formatter
   }()
@@ -177,7 +177,7 @@ public class RecorderManager: NSObject {
       throw NSError(domain: "RecorderManager", code: 0, userInfo: [NSLocalizedDescriptionKey: "Documentsディレクトリを取得できません"])
     }
     let timestamp = fileDateFormatter.string(from: Date())
-    let filename = "recording-\(timestamp).m4a"
+    let filename = "\(timestamp).m4a"
     return directory.appendingPathComponent(filename)
   }
 
